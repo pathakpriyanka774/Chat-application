@@ -56,13 +56,11 @@ console.log(arrivalMessage);
       from: data._id,
       msg,});
     
-    publishMessage("chat/messages", { to:currentChat._id,
-      from: data._id,
-      msg:msg});
-
-        console.log("Message",msg);
-        const newComingMessage = { fromSelf: false, message: msg };
-         setArrivalMessage(newComingMessage);
+  const messageString = JSON.stringify({ to: currentChat._id, from: data._id, msg });
+    
+  publishMessage(`chat/messages/${currentChat._id}`, messageString);
+      const newComingMessage = { fromSelf: true, message: msg };
+       setArrivalMessage(newComingMessage);
   };
  
   
