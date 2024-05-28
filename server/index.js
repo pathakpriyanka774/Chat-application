@@ -9,6 +9,7 @@ require("dotenv").config();
 
 app.use(cors());
 app.use(express.json());
+
 //connect with mongoDB
 mongoose.connect('mongodb+srv://pathakpriyanka774:CCtCGZHOn7RHlx2K@cluster0.xsyh5pb.mongodb.net/ChatApp?retryWrites=true&w=majority').then(() =>
         app.listen(5000)).then(() => console.log("Connected To Database and listening To Localhost 5000"))
@@ -49,6 +50,19 @@ client.on('message', (topic, message) => {
     client.subscribe('chat/messages', message.toString());
 
 });
+// client.on('message', async(topic, message) => {
+//     const [_, username, statusType] = topic.split('/');
+//     if (statusType === 'status') {
+//         const status = message.toString();
+//         await UserStatus.updateOne({ username }, { status, lastActive: new Date() }, { upsert: true });
+//         console.log(`User ${username} is now ${status}`);
+//     }
+// });
+
+// app.get('/users/online', async(req, res) => {
+//     const onlineUsers = await UserStatus.find({ status: 'online' });
+//     res.json(onlineUsers);
+// });
 
 
 
@@ -71,14 +85,14 @@ client.on('error', (err) => {
 
 //client.publish(JSON.stringify({ topic: 'chat/messages', msg: "Hii priya" }));
 
-// const publishMessage = (topic, msg) => {
-//     client.publish(topic, msg, (err) => {
-//         if (err) {
-//             console.error('Error publishing message:', err);
-//         } else {
-//             console.log('Message published successfully');
-//         }
-//     });
-// };
+const publishMessage = (topic, msg) => {
+    client.publish(topic, msg, (err) => {
+        if (err) {
+            console.error('Error publishing message:', err);
+        } else {
+            console.log('Message published successfully');
+        }
+    });
+};
 
-// publishMessage("chat/messages", "Please try to publish my message!!");
+publishMessage("chat/messages", "Please try to publish my message!!");

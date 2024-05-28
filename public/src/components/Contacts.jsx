@@ -12,7 +12,7 @@ export default function Contacts({ contacts, changeChat }) {
   const [searchResults, setSearchResults] = useState([]);
   const [startIndex, setStartIndex] = useState(0);
   const [mycontacts, setmycontacts] = useState([]);
-  console.log("startIndex",startIndex);
+ 
   let array2=[];
   useEffect(async () => {
     const data = await JSON.parse(
@@ -27,7 +27,7 @@ export default function Contacts({ contacts, changeChat }) {
     const fetchSearchResults = async () => {
       try {
         const response = await axios.get(`${getUserSearchRoute}?searchQuery=${searchQuery}`);
-        console.log("response.data",response.data);
+        //console.log("response.data",response.data);
         filterdata(response.data);
         setSearchResults(response.data);
       
@@ -42,13 +42,13 @@ export default function Contacts({ contacts, changeChat }) {
   }, [searchQuery]);
 
  const filterdata=(contactarray,start=0)=>{
-  console.log("SearchResults",contactarray);
+  //console.log("SearchResults",contactarray);
   if(contactarray.length>4){
     array2=contactarray.filter((contact,index)=>{
   if(index>=start && index<=start+3){
   return contact;
 }   })
-console.log(array2);
+
   setmycontacts(array2);
 }
 else{
@@ -80,7 +80,7 @@ setmycontacts(contactarray);
    filterdata(searchResults,startIndex+4);
    setStartIndex(startIndex+4);
     }
-   console.log("startIndex",startIndex);
+
   }
 
   const prevBtn=()=>{
@@ -88,12 +88,12 @@ setmycontacts(contactarray);
       filterdata(searchResults,startIndex-4);
     setStartIndex(startIndex-4);
     }
-    console.log("startIndex",startIndex);
+
   }
   const handleSearchInputChange = (event) => {
     setSearchQuery(event.target.value);
   };
-  console.log("MyContacts",mycontacts);
+  
   return (
     <>
       {currentUserImage && currentUserImage && (

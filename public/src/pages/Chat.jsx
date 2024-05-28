@@ -10,20 +10,20 @@ import Welcome from "../components/Welcome";
 
 export default function Chat() {
   const navigate = useNavigate();
-  const mqttClientRef = useRef(null);
+  const mqttClientRef = useRef(null); 
   const [contacts, setContacts] = useState([]);
   const [currentChat, setCurrentChat] = useState(undefined);
   const [currentUser, setCurrentUser] = useState(undefined);
- console.log("currentChat,cuurentUser :",currentChat,currentUser);
+ 
+ 
   mqttClientRef.current = mqtt.connect('wss://49d84cd4714d4a25ad97ea906e7a7bb6.s1.eu.hivemq.cloud:8884/mqtt', {
     username: "hivemq.webclient.1714543373014",
     password: "SgX&@1Idt:FCy*E3o92m"
 });
-mqttClientRef.current.on('connect', () => {
-  console.log("connected!!");
-  mqttClientRef.current.subscribe('chat/messages');
-
-});
+// mqttClientRef.current.on('connect', () => {
+//   mqttClientRef.current.subscribe(`chat/messages/${currentUser._id}`);
+ 
+// });
 mqttClientRef.current.on('error', (err) => {
   console.error('MQTT Error:', err);
 });
@@ -31,7 +31,7 @@ mqttClientRef.current.on('error', (err) => {
 
 
   useEffect(async () => {
-    console.log("process.env.REACT_APP_LOCALHOST_KEY",process.env.REACT_APP_LOCALHOST_KEY);
+   // console.log("process.env.REACT_APP_LOCALHOST_KEY",process.env.REACT_APP_LOCALHOST_KEY);
     if (!localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)) {
       navigate("/login");
     } else {
@@ -43,20 +43,20 @@ mqttClientRef.current.on('error', (err) => {
     }
   }, []);
 
-  useEffect(() => {
+  // useEffect(() => {
     
-    mqttClientRef.current.on('message', (topic, message) => {
-      const currentChat = [...contacts, message.toString()];
-      console.log("currentChat",currentChat);
-      setCurrentChat(currentChat);
-    });
+  //   mqttClientRef.current.on('message', (topic, message) => {
+  //     const currentChat = [...contacts, message];
+  //     console.log("currentChat",currentChat);
+  //     setCurrentChat(currentChat);
+  //   });
 
    
-  }, [contacts]);
+  // }, [contacts]);
 
   const sendMessage = (msgData) => {
    
-    console.log("msgData", msgData); 
+   // console.log("msgData", msgData); 
   };
   
   useEffect(async () => {
@@ -72,7 +72,8 @@ mqttClientRef.current.on('error', (err) => {
   
   const handleChatChange = (chat) => {
     setCurrentChat(chat);
-    mqttClientRef.current.subscribe(`chat/${chat.id}`);
+    mqttClientRef.current.subscribe(`chat/messages/${chat.id}`);
+   //mqttClientRef.current.subscribe(`chat/messages/${currentUser._id}`);
 
   };
   
@@ -93,7 +94,7 @@ mqttClientRef.current.on('error', (err) => {
             </>
           ) : (<>
           
-            <ChatContainer currentChat={currentChat}  sendMessage={sendMessage} mqttClientRef={mqttClientRef}  />
+            <ChatContainer currentChat={currentChat} currentUser={currentUser} sendMessage={sendMessage} mqttClientRef={mqttClientRef}  />
             </>
           )}
         </div>

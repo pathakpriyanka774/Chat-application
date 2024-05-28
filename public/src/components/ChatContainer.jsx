@@ -6,11 +6,12 @@ import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import { sendMessageRoute, recieveMessageRoute } from "../utils/APIRoutes";
 
-export default function ChatContainer({ currentChat,sendMessage, mqttClientRef }) {
+export default function ChatContainer({ currentChat, currentUser, sendMessage, mqttClientRef }) {
   const [messages, setMessages] = useState([]);
+  const [arrivalMessage, setArrivalMessage] = useState(null); 
+  const [onlineStatus, setOnlineStatus] = useState("offline");
   const scrollRef = useRef();
-  const [arrivalMessage, setArrivalMessage] = useState(null);
-console.log(arrivalMessage);
+
   useEffect(() => {
     const fetchMessages = async () => {
       const data = JSON.parse(
@@ -19,62 +20,110 @@ console.log(arrivalMessage);
       const response = await axios.post(recieveMessageRoute, {
         from: data._id,
         to: currentChat._id,
-        
       });
-    //  console.log("response",response.data);
       setMessages(response.data);
     };
+    
     fetchMessages();
-
-
   }, [currentChat]);
 
   const publishMessage = (topic, msg) => {
     mqttClientRef.current.publish(topic, msg, (err) => {
-        if (err) {
-            console.error('Error publishing message:', err);
-        } else {
-            console.log('Message published successfully');
-        }
+      if (err) {
+        console.error('Error publishing message:', err);
+      } else {
+        console.log('Message published successfully at', topic);
+      }
     });
-};
+  };
+
+  useEffect(() => {
+    const handleConnect = () => {
+      const statusTopic = `user/status/${currentUser._id}`;
+      mqttClientRef.current.subscribe(statusTopic, (err) => {
+        if (err) {
+          console.error('Subscription error:', err);
+        } else {
+          console.log('Subscribed to topic:', statusTopic);
+          publishMessage(statusTopic, JSON.stringify({user:currentUser, status: 'online' }));
+        }
+      });
+     // mqttClientRef.current.subscribe(`user/status/${currentChat._id}`);
+    };
+
+    const handleDisconnect = () => {
+      publishMessage(`user/status/${currentUser._id}`, JSON.stringify({ status: 'offline' }));
+    };
+
+    mqttClientRef.current.on('connect', handleConnect);
+    mqttClientRef.current.on('disconnect', handleDisconnect);
+    window.addEventListener('beforeunload', handleDisconnect);
+
+    return () => {
+      mqttClientRef.current.off('connect', handleConnect);
+      mqttClientRef.current.off('disconnect', handleDisconnect);
+      window.removeEventListener('beforeunload', handleDisconnect);
+    };
+  }, [currentChat, currentUser._id, mqttClientRef]);
 
   const handleSendMsg = async (msg) => {
     const data = JSON.parse(
       localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
     );
-    const newMessage = { fromSelf: true, message: msg };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
-  
-    // No need to wait for axios response for the sender's side
     axios.post(sendMessageRoute, {
       from: data._id,
       to: currentChat._id,
       message: msg,
     });
-    sendMessage({ to:currentChat._id,
-      from: data._id,
-      msg,});
-    
-    publishMessage("chat/messages", { to:currentChat._id,
-      from: data._id,
-      msg:msg});
-
-        console.log("Message",msg);
-        const newComingMessage = { fromSelf: false, message: msg };
-         setArrivalMessage(newComingMessage);
+    sendMessage({ to: currentChat._id, from: data._id, msg });
+    const messageString = JSON.stringify({ to: currentChat._id, from: data._id, msg });
+    publishMessage(`chat/messages/${currentChat._id}`, messageString);
+    const newComingMessage = { fromSelf: true, message: msg };
+    setMessages((prev) => [...prev, newComingMessage]);
   };
- 
-  
 
   useEffect(() => {
-    if (mqttClientRef.current) {
-      mqttClientRef.current.on("chat/messages", (msg) => {
-        const newMessage = { fromSelf: false, message: msg };
-        setArrivalMessage(newMessage);
-      });
-    }
-  }, []);
+    const topic = `chat/messages/${currentUser._id}`;
+    mqttClientRef.current.subscribe(topic, (err) => {
+      if (err) {
+        console.error('Subscription error:', err);
+      } else {
+        console.log('Subscribed to topic:', topic);
+      }
+    });
+
+    const messageHandler = (topic, message) => {
+      const parsedMessage = JSON.parse(message.toString());
+      console.log('parsedMessage :',parsedMessage);
+      if (topic.startsWith("chat/messages/")) {
+        if (parsedMessage.to === currentUser._id && parsedMessage.from === currentChat._id) {
+          const newMessage = { fromSelf: false, message: parsedMessage.msg };
+          setArrivalMessage(newMessage);
+        }
+      } 
+       if (topic.startsWith("user/status/")) {
+        console.log("Current Chat ID :",currentUser._id);
+        console.log("parsed messages user :",parsedMessage.user);
+
+        if(currentChat._id==parsedMessage.user._id){
+          console.log("YESS!!!");
+        
+        if (parsedMessage.status && parsedMessage.status !== onlineStatus) {
+          setOnlineStatus(parsedMessage.status);
+        }
+      }
+      }
+    };
+
+    mqttClientRef.current.on('message', messageHandler);
+    mqttClientRef.current.on('error', (error) => {
+      console.error(`MQTT error: ${error}`);
+    });
+
+    return () => {
+      mqttClientRef.current.off('message', messageHandler);
+    };
+  }, [currentChat, currentUser._id, mqttClientRef, onlineStatus]);
 
   useEffect(() => {
     arrivalMessage && setMessages((prev) => [...prev, arrivalMessage]);
@@ -96,6 +145,7 @@ console.log(arrivalMessage);
           </div>
           <div className="username">
             <h3>{currentChat.username}</h3>
+            <span className={`status ${onlineStatus}`}>{onlineStatus}</span>
           </div>
         </div>
         <Logout />
@@ -122,7 +172,6 @@ console.log(arrivalMessage);
   );
 }
 
-
 const Container = styled.div`
   display: grid;
   grid-template-rows: 10% 80% 10%;
@@ -146,8 +195,20 @@ const Container = styled.div`
         }
       }
       .username {
+        display: flex;
+        flex-direction: column;
         h3 {
           color: white;
+        }
+        .status {
+          font-size: 0.8rem;
+          color: gray;
+          &.online {
+            color: green;
+          }
+          &.offline {
+            color: red;
+          }
         }
       }
     }
