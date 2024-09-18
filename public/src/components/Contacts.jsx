@@ -4,7 +4,9 @@ import axios from 'axios';
 import Logo from "../assets/logo.svg";
 import { getUserSearchRoute } from "../utils/APIRoutes";
 import Logout from "./Logout";
-export default function Contacts({ contacts, changeChat }) {
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+export default function Contacts({ contacts, changeChat,currentUser,mqttClientRef, isSidebarVisible, setIsSidebarVisible }) {
   const [currentUserName, setCurrentUserName] = useState(undefined);
   const [currentUserImage, setCurrentUserImage] = useState(undefined);
   const [currentSelected, setCurrentSelected] = useState(undefined);
@@ -12,7 +14,7 @@ export default function Contacts({ contacts, changeChat }) {
   const [searchResults, setSearchResults] = useState([]);
   const [startIndex, setStartIndex] = useState(0);
   const [mycontacts, setmycontacts] = useState([]);
- 
+ console.log(isSidebarVisible);
   let array2=[];
   useEffect(async () => {
     const data = await JSON.parse(
@@ -57,6 +59,7 @@ setmycontacts(contactarray);
  }
 
   const changeCurrentChat = (index, contact) => {
+    console.log(contact);
     setCurrentSelected(index);
     changeChat(contact);
   };
@@ -99,10 +102,16 @@ setmycontacts(contactarray);
       {currentUserImage && currentUserImage && (
         <Container>
           <div className="brand">
-            <img src={Logo} alt="logo" />
-            <h3>ChitChat</h3>
+           {isSidebarVisible&& (<React.Fragment><img src={Logo} alt="logo" />
+            <h3 className="mt-1">ChitChat</h3></React.Fragment> )}
+            <div className="toggle-button">
+        <button onClick={() => setIsSidebarVisible(!isSidebarVisible)}>
+        <FontAwesomeIcon icon={isSidebarVisible ? faTimes : faBars} />
+        
+        </button>
+      </div>
           </div>
-          <div className="contacts">
+         {isSidebarVisible&& ( <div className="contacts">
             <div  className="sortContact row"><div className="col-6" onClick={()=>handleSortasecending(mycontacts)}><h3>Sort ↑</h3>
  </div><div className="col-6" onClick={()=>handleSortdescending(mycontacts)}><h3>Sort ↓</h3>
  </div></div>
@@ -144,8 +153,8 @@ setmycontacts(contactarray);
             )}
              <div className="row w-100 mb-2"><div className="col-4"><button className="btn nextbtn btn-primary pt-2 pb-0 ms-2 me-1" onClick={()=>prevBtn()}><h6>Prev</h6></button></div><div className="col-4 "><button className="btn btn-primary nextbtn pt-2 pb-0 ms-5" onClick={()=>nextBtn()}><h6>Next</h6></button></div>
              </div>
-          </div>
-          
+          </div>)}
+          {isSidebarVisible && (
           <div className="current-user ">
             <div className="avatar mt-2 me-2">
               <img
@@ -155,10 +164,10 @@ setmycontacts(contactarray);
             </div>
             
             <div className="username row">
-             <div className="col-8 mt-3"><h3>{currentUserName}</h3></div><div className="col-4 mt-3"><Logout /></div>
+             <div className="col-8 mt-3"><h3>{currentUserName}</h3></div><div className="col-4 mt-3"><Logout mqttClientRef={mqttClientRef} currentUser={currentUser} /></div>
             </div>
             
-          </div>
+          </div>)}
           
         </Container>
       )}
@@ -169,7 +178,8 @@ const Container = styled.div`
   display: grid;
   grid-template-rows: 10% 75% 15%;
   overflow: hidden;
-  background-color: #080420;
+  
+  background-color: ${({ isSidebarVisible }) => (isSidebarVisible ? "transparent" : "#080420")};
   .brand {
     display: flex;
     align-items: center;
@@ -183,6 +193,7 @@ const Container = styled.div`
       text-transform: uppercase;
     }
   }
+
   .contacts {
     display: flex;
     flex-direction: column;
@@ -265,11 +276,14 @@ const Container = styled.div`
         color: white;
       }
     }
+    
+   
     @media screen and (min-width: 720px) and (max-width: 1080px) {
       gap: 0.5rem;
       .username {
         h2 {
           font-size: 1rem;
+         
         }
       }
     }

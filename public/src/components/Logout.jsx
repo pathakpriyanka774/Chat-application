@@ -4,20 +4,25 @@ import { BiPowerOff } from "react-icons/bi";
 import styled from "styled-components";
 import axios from "axios";
 import { logoutRoute } from "../utils/APIRoutes";
-export default function Logout() {
+export default function Logout( {mqttClientRef,currentUser}) {
   const navigate = useNavigate();
-  const handleClick = async () => {
-    const id = await JSON.parse(
-      localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
-    )._id;
-    const data = await axios.get(`${logoutRoute}/${id}`);
-    if (data.status === 200) {
-      localStorage.clear();
-      navigate("/login");
-    }
+
+  const handleLogout = () => {
+    const publishStatus = (status) => {
+      if (currentUser) {
+        const topic = `user/status/${currentUser._id}`;
+        const message = JSON.stringify({ user: currentUser._id, status });
+        mqttClientRef.current.publish(topic, message, { retain: true }, () => {
+          mqttClientRef.current.end();
+          localStorage.removeItem(process.env.REACT_APP_LOCALHOST_KEY);
+          navigate("/login");
+        });
+      }
+    };
+    publishStatus('offline');
   };
   return (
-    <Button onClick={handleClick}>
+    <Button onClick={handleLogout}>
       <BiPowerOff />
     </Button>
   );

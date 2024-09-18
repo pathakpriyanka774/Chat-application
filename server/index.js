@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 //connect with mongoDB
-mongoose.connect('mongodb+srv://pathakpriyanka774:CCtCGZHOn7RHlx2K@cluster0.xsyh5pb.mongodb.net/ChatApp?retryWrites=true&w=majority').then(() =>
+mongoose.connect('mongodb+srv://pathakpriyanka774:l20Nys1ZLhf1Ezpx@chatapp.tj2i1.mongodb.net/ChatApp?retryWrites=true&w=majority').then(() =>
         app.listen(5000)).then(() => console.log("Connected To Database and listening To Localhost 5000"))
     .catch((err) => console.log(err));
 app.get("/ping", (_req, res) => {
@@ -95,4 +95,4 @@ const publishMessage = (topic, msg) => {
     });
 };
 
-publishMessage("chat/messages", "Please try to publish my message!!");
+//publishMessage("chat/messages", "Please try to publish my message!!");

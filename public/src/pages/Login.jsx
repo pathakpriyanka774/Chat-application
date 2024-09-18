@@ -47,6 +47,7 @@ export default function Login() {
         username,
         password, 
       });
+      console.log("DATA: ",data);
       if (data.status === false) {
         toast.error(data.msg, toastOptions);
       }
@@ -55,6 +56,7 @@ export default function Login() {
           process.env.REACT_APP_LOCALHOST_KEY,
           JSON.stringify(data.user)
         );
+        localStorage.setItem('token', data.token);
 
         navigate("/");
       }
